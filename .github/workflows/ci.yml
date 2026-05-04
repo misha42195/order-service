@@ -37,16 +37,16 @@ jobs:
       - name: Lint with ruff
         run: |
           pip install ruff
-          ruff check .
+          ruff check main_service/
 
       - name: Type check with mypy
         run: |
           pip install mypy
-          mypy . --ignore-missing-imports
+          mypy main_service/ --ignore-missing-imports
 
       - name: Run Tests
         run: |
-          pytest testing/ --cov=. --cov-report=xml
+          pytest main_service/testing/ --cov=main_service --cov-report=xml
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
