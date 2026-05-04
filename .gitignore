@@ -218,3 +218,5 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+/main-service/CLAUDE.md
+/main-service/kind_bin
