@@ -1,0 +1,29 @@
+name: CI/CD Pipeline
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+
+
+
+stages:
+  - test
+  - deploy
+
+test:
+  stage: test
+  image: python:3.11
+  script:
+    - pip install -r requirements.txt
+    - pytest --cov=src
+  only:
+    - main
+    - develop
+  deply:
+    stage: deploy
+    script:
+      - echo "Deploying to production..."
+    only:
+      - main

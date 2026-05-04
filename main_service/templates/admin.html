@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Админ панель создание товара</title>
+    <style>
+      body {
+        background-color: #121212;
+        color: #eeeeee;
+        font-family: sans-serif;
+        max-width: 500px;
+        margin: 40px auto;
+        padding: 20px;
+      }
+      
+      h1 {
+        text-align: center;
+        border-bottom: 1px solid #333;
+        padding-bottom: 10px;
+      }
+      
+      form {
+        background-color: #1e1e1e;
+        padding: 20px;
+        border: 1px solid #333;
+      }
+      
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 14px;
+        color: #999;
+      }
+      
+      input {
+        width: 100%;
+        background-color: #121212;
+        border: 1px solid #444;
+        color: #fff;
+        padding: 10px;
+        margin-bottom: 20px;
+        box-sizing: border-box;
+        border-radius: 0;
+      }
+      
+      input:focus {
+        border-color: #00ff00;
+        outline: none;
+      }
+      
+      button {
+        width: 100%;
+        background-color: #333;
+        color: #fff;
+        border: 1px solid #555;
+        padding: 12px;
+        cursor: pointer;
+        font-weight: bold;
+        text-transform: uppercase;
+      }
+      
+      button:hover {
+        background-color: #444;
+        border-color: #666;
+      }
+      
+      #message {
+        margin-top: 20px;
+        padding: 10px;
+        font-size: 14px;
+        border: 1px solid transparent;
+      }
+      
+      .success {
+        border-color: #2e7d32;
+        color: #4caf50;
+      }
+      
+      .error {
+        border-color: #c62828;
+        color: #ef5350;
+      }
+      
+      
+      #producsList {
+        margin-top: 30px;
+        width: 100%;
+      }
+      
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        border-color: #1e1e1e;
+        border: 1px solid #333;
+      }
+      
+      th, td {
+        padding: 12px;
+        text-align: left;
+        border: 1px solid #333;
+        
+      }
+      
+      th {
+        background-color: #252525;
+        color: #999;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      
+      td {
+        font-size: 14px;
+        color: #fff;
+      }
+      
+      tr:hover td {
+        background-color: #252525;
+      }
+      
+      .refresh-btn {
+        margin-bottom: 15px;
+        background-color: #1a1a1a;
+        border-color: #444;
+        width: auto;
+        padding: 8px 16px;
+        font-size: 12px;
+      }
+      
+      .badge {
+        color: #00ff00;
+        font-family: monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SFMShop Admin</h1>
+    
+    <!-- СЕКЦИЯ АВТОРИЗАЦИИ -->
+    <div class="card">
+      <label>JWT Токен</label>
+      <input type="password" id="token" placeholder="Bearer токен..."
+             onchange="localStorage.setItem('atoken', this.value)">
+    </div>
+    
+    <!-- ФОРМА ДОБАВЛЕНИЯ -->
+    <div class="card">
+      <form
+        id="productForm">
+        <label for="name">Название товара</label>
+        <input
+          type="text"
+          id="name" required>
+        
+        <label
+          for="price">Стоимость (RUB)</label>
+        <input
+          type="number"
+          id="price"
+          step="0.01"
+          min="0" required>
+        
+        <label
+          for="stock">Количество</label>
+        <input
+          type="number"
+          id="stock"
+          min="0"
+          value="0">
+        <button
+          type="submit">Создать товар
+        </button>
+      </form>
+      <div id="message"></div>
+    </div>
+    
+    <!-- СПИСОК ТОВАРОВ -->
+    <h1>Список товаров</h1>
+    <button
+      id="getProductsBtn"
+      class="refresh-btn"> Обновить список
+    </button>
+    
+    <table>
+      <thead>
+      <tr>
+        <th>ID</th>
+        <th>Название</th>
+        <th>Цена</th>
+        <th>Склад</th>
+      </tr>
+      </thead>
+      <tbody id="productsTableBody"></tbody>
+    </table>
+    
+    <script>
+      // 1.работа с толуном
+      function getAuthHeader() {
+        const token = document.getElementById("token").value.trim() || localStorage.getItem('atoken');
+        if (!token) return "";
+        // Автоматически добавляем Bearer, если пользователь вставил только «тело» токена
+        return token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+      }
+      
+      // Загрузка токена при старте
+      document.getElementById("token").value = localStorage.getItem('atoken') || "";
+      
+      // 2. ДОБАВЛЕНИЕ ТОВАРА (POST)
+      document.getElementById("productForm").addEventListener("submit", async function (event) {
+        event.preventDefault();
+        const messageDiv = document.getElementById("message");
+        
+        const formData = {
+          name: document.getElementById("name").value,
+          price: parseFloat(document.getElementById("price").value),
+          stock: parseInt(document.getElementById("stock").value) || 0
+        };
+        
+        try {
+          const response = await fetch("http://localhost:8000/api/v1/products", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": getAuthHeader()
+            },
+            body: JSON.stringify(formData)
+          });
+          
+          const result = await response.json();
+          
+          if (response.ok) {
+            messageDiv.textContent = `Товар добавлен. ID: ${result.id}`;
+            messageDiv.className = "success";
+            document.getElementById("productForm").reset();
+            // Сразу обновляем таблицу
+            document.getElementById("getProductsBtn").click();
+          } else {
+            // Если ошибка 401/403 или валидация
+            const errorText = typeof result.detail === 'string' ? result.detail : JSON.stringify(result.detail);
+            messageDiv.textContent = `Ошибка: ${errorText}`;
+            messageDiv.className = "error";
+          }
+        } catch (error) {
+          messageDiv.textContent = `Ошибка соединения: ${error.message}`;
+          messageDiv.className = `error`;
+        }
+      });
+      
+      // 3. ПОЛУЧЕНИЕ СПИСКА (GET)
+      document.getElementById("getProductsBtn").addEventListener("click", async function () {
+        const tbody = document.getElementById("productsTableBody");
+        try {
+          const response = await fetch("http://localhost:8000/api/v1/products", {
+            method: "GET",
+            headers: {
+              "Authorization": getAuthHeader()
+            }
+          });
+          
+          const result = await response.json();
+          const actualList = result.products || [];
+          
+          tbody.innerHTML = "";
+          actualList.forEach((p) => {
+            const row = `
+            <tr>
+              <td>${p.id}</td>
+              <td>${p.name}</td>
+              <td>${p.price}</td>
+              <td>${p.stock} шт.</td>
+            </tr>
+            `;
+            tbody.innerHTML += row;
+          });
+          
+        } catch (error) {
+          console.error("Ошибка:", error);
+          tbody.innerHTML = `<tr><td colspan="4" style="color:red">Ошибка: ${error.message}</td></tr>`;
+        }
+      });
+      // Авто-загрузка списка при открытии страницы
+      if (getAuthHeader()) document.getElementById("getProductsBtn").click();
+    </script>
+  </body>
+</html>

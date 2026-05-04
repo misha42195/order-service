@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: main-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: main-service  # Вот здесь должно быть поле app
+  template:
+    metadata:
+      labels:
+        app: main-service
+    spec:              # Вот этот spec ВНУТРИ template
+      containers:      # Контейнеры описываются здесь
+      - name: main-container
+        image: your-image-name:latest
+        ports:
+        - containerPort: 8000
